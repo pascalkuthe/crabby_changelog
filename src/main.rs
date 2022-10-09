@@ -165,6 +165,6 @@ impl cli::CliArgs {
 
 fn main() {
     if let Err(err) = cli::CliArgs::parse().run() {
-        eprintln!("{err}");
+        eprintln!("error: {err}");
     }
 }
