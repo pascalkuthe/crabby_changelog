@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, FromArgMatches, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -19,7 +19,7 @@ pub struct CliArgs {
         short,
         long,
         value_name = "FILE",
-        default_value = ".crabby_changelog/changelog.json"
+        default_value = ".crabby_changelog/changelog.toml"
     )]
     pub state: PathBuf,
 
@@ -44,10 +44,10 @@ pub struct Render {
 
 #[derive(Args)]
 pub struct AddPr {
-    /// The repository that the PR belongs to
-    /// like `pascalkuthe/crabby_changelog`
-    pub repo: String,
-    /// The nubmer that is used to refer to the PR
-    /// (in markdown using `#id`).
+    #[arg(conflicts_with = "ids", conflicts_with = "since_ref")]
+    pub since_timestamp: Option<u32>,
+    #[arg(conflicts_with = "ids", conflicts_with = "since_timestamp")]
+    pub since_ref: Option<String>,
+    #[arg(conflicts_with = "since_ref", conflicts_with = "since_timestamp")]
     pub ids: Vec<u32>,
 }

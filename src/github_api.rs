@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::vec;
 
@@ -32,17 +32,15 @@ impl Sort {
     }
 }
 
-pub struct PullRequestIter<'a> {
+pub struct PullRequestIter {
     items: vec::IntoIter<PullRequest>,
     next_page: Option<String>,
-    token: &'a str,
 }
 
-impl<'a> PullRequestIter<'a> {
+impl PullRequestIter {
     fn new(
         repo: &str,
         dst_branch: &str,
-        token: &'a str,
         state: Option<IssueState>,
         sort: Option<Sort>,
     ) -> Result<Self> {
@@ -57,12 +55,11 @@ impl<'a> PullRequestIter<'a> {
             args.push(("direction", "desc"));
         }
 
-        let response = call_github_api_endpoint(repo, token, "pulls", &[], &args)?;
+        let response = call_github_api_endpoint(repo, "pulls", &[], &args)?;
         let (items, next_page) = Self::handle_response(response)?;
         Ok(PullRequestIter {
             items: items.into_iter(),
             next_page,
-            token,
         })
     }
 
@@ -76,7 +73,7 @@ impl<'a> PullRequestIter<'a> {
     }
 }
 
-impl Iterator for PullRequestIter<'_> {
+impl Iterator for PullRequestIter {
     type Item = Result<PullRequest>;
 
     fn next(&mut self) -> Option<Result<PullRequest>> {
@@ -86,8 +83,7 @@ impl Iterator for PullRequestIter<'_> {
             }
 
             let next_page = self.next_page.take()?;
-            match call_github_api(&next_page, self.token, &[], &[]).and_then(Self::handle_response)
-            {
+            match call_github_api(&next_page, &[], &[]).and_then(Self::handle_response) {
                 Ok((items, next_page)) => {
                     self.items = items.into_iter();
                     self.next_page = next_page;
@@ -105,24 +101,23 @@ struct PullsIter {
 
 fn call_github_api_endpoint(
     repo: &str,
-    token: &str,
     endpoint: &str,
     headers: &[(&str, &str)],
     queries: &[(&str, &str)],
 ) -> Result<ureq::Response> {
     let url = format!("https://api.github.com/repos/{repo}/{endpoint}");
-    call_github_api(&url, token, headers, queries)
+    call_github_api(&url, headers, queries)
 }
 
 fn call_github_api(
     url: &str,
-    token: &str,
     headers: &[(&str, &str)],
     queries: &[(&str, &str)],
 ) -> Result<ureq::Response> {
+    let token = std::env::var("GITHUB_TOKEN").context("no token set")?;
     let mut request = ureq::get(url)
         .set("Accept", "application/vnd.github+json")
-        .set("Authorization", token);
+        .set("Authorization", &token);
     for (param, value) in headers.iter() {
         request = request.set(param, value)
     }
@@ -154,9 +149,9 @@ pub struct PullRequest {
 }
 
 impl PullRequest {
-    pub fn lookup(repo: &str, token: &str, number: u32) -> Result<PullRequest> {
-        let response = call_github_api_endpoint(repo, token, &format!("pulls/{number}"), &[], &[])?
-            .into_string()?;
+    pub fn lookup(repo: &str, number: u32) -> Result<PullRequest> {
+        let response =
+            call_github_api_endpoint(repo, &format!("pulls/{number}"), &[], &[])?.into_string()?;
         let res = serde_json::from_str(&response)?;
         Ok(res)
     }
@@ -164,11 +159,10 @@ impl PullRequest {
     pub fn repo_query<'a>(
         repo: &str,
         dst_branch: &str,
-        token: &'a str,
         state: Option<IssueState>,
         sort: Option<Sort>,
-    ) -> Result<PullRequestIter<'a>> {
-        PullRequestIter::new(repo, dst_branch, token, state, sort)
+    ) -> Result<PullRequestIter> {
+        PullRequestIter::new(repo, dst_branch, state, sort)
     }
 
     pub fn title_contains(&self, substr: &str) -> bool {

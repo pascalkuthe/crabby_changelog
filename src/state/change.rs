@@ -3,15 +3,7 @@ use serde::de::Deserializer;
 use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 
-use crate::state::PullRequest;
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-pub struct Change {
-    pub message: String,
-    pub group: String,
-}
-
-pub type ChangeMeta = IndexSet<PullRequest>;
+use crate::state::one_or_many;
 
 pub fn serialize<S>(map: &IndexMap<Change, ChangeMeta>, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -32,11 +24,4 @@ where
         map.insert(change.change, change.prs);
     }
     Ok(map)
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct SerializedChange {
-    #[serde(flatten)]
-    change: Change,
-    prs: ChangeMeta,
 }

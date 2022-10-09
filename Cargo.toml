@@ -17,3 +17,4 @@ serde_json = { version = "1.0.85", features = ["preserve_order"] }
 tera = "1.17.1"
 toml = "0.5.9"
 ureq = "2.5.0"
+xshell = "0.2.2"

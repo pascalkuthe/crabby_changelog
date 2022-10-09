@@ -1,5 +1,9 @@
 default_group = "Usability improvements and fixes"
 
+main_branch = "main"
+changelog_branch = "changelog"
+repo = "helix-editor/helix"
+
 groups = [
     "Breaking changes",
     "Features",
@@ -14,28 +18,29 @@ groups = [
 
 template = """
 {% if version %}\
-    ## {{ timestamp | date(format="%Y-%m-%d") }}.{{ version }}
+    # {{ now() | date(format="%y.%m") }}.{{ version }}
 {% else %}\
-    ## Unreleased Changes
+    # Unreleased Changes
 {% endif %}
 A big _thank you_ to our contributors! This release had {{ authors | length }} contributors.
 
 As usual, the following is a summary of each of the changes since the last release.
-For the full log, check out the [git log](https://github.com/helix-editor/helix/compare/22.05..22.08).\
-{% for group, changes in changes | group_by(attribute="group") %}
-    ### {{ group }}
-    {% for change in changes %}
-    - {{ change.message | upper_first }}\
-        {% if change.prs | length != 0 %}\
-             (\
-              {% for pr in changes.prs %}\
-                [#{{ pr.number }}]({{ pr.url }})\
-                {% if not loop.last %},{% endif %}\
-              {% endfor %}\
-             )\
-        {% endif %}\n
-    {% endfor %}\n
-{% endfor %}\n
+For the full log, check out the [git log].
+
+{% for group, changes in changes | group_by(attribute="group") %}\
+{{ group }}:
+{% for change in changes %}
+- {{ change.message | upper_first }} \
+{% if change.pr | length != 0 %}\
+(\
+    {% for pr in change.pr %}\
+    [#{{ pr }}]({{ pr_url(pr=pr) }})\
+    {% if not loop.last %}, {% endif %}\
+    {% endfor %}\
+)\
+{% endif %}\n
+{% endfor %}\
+{% endfor %}\
 """
 
 [label_groups]
