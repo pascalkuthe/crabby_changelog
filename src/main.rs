@@ -18,22 +18,22 @@ impl github_api::PullRequest {
     pub fn changelog_entries<'a>(&'a self, config: &'a Config, dst: &mut ReleaseState) {
         let mut main_change = None;
 
-        let pr = vec![state::PullRequest {
+        let pr = state::PullRequest {
             number: self.number,
             url: self.url.clone(),
-        }];
+        };
 
         let mut generate_main_change = true;
 
         if let Some(body) = &self.body {
             for line in body.lines() {
                 if let Some((_, mut rem)) = line.trim().split_once("changelog") {
-                    let mut category = None;
+                    let mut group = None;
                     if rem.starts_with('[') {
-                        if let Some((category_, rem_)) = rem[1..].split_once(']') {
-                            category = match config.label_categories.get(category_) {
-                                Some(category_) => Some(category_.to_owned()),
-                                None => Some(category_.to_owned()),
+                        if let Some((group_, rem_)) = rem[1..].split_once(']') {
+                            group = match config.label_groups.get(group_) {
+                                Some(group_) => Some(group_.to_owned()),
+                                None => Some(group_.to_owned()),
                             };
                             rem = rem_;
                         }
@@ -42,13 +42,14 @@ impl github_api::PullRequest {
                         continue;
                     }
 
-                    if let Some(category) = category {
-                        let change = Change {
-                            category,
-                            message: rem.trim_start().to_owned(),
-                            prs: pr.clone(),
-                        };
-                        dst.changes.push(change);
+                    if let Some(group) = group {
+                        dst.insert_pr_change(
+                            Change {
+                                message: rem.trim_start().to_owned(),
+                                group,
+                            },
+                            pr.clone(),
+                        );
                     } else {
                         main_change = Some(rem.trim_start().to_owned())
                     }
@@ -67,21 +68,27 @@ impl github_api::PullRequest {
         if let Some(main_change) = main_change {
             if let Some(labels) = &self.labels {
                 for label in labels {
-                    if let Some(category) = config.label_categories.get(&label.name) {
-                        dst.changes.push(Change {
-                            message: main_change.clone(),
-                            category: category.to_owned(),
-                            prs: pr.clone(),
-                        });
+                    if let Some(group) = config.label_groups.get(&label.name) {
+                        generate_main_change = false;
+                        dst.insert_pr_change(
+                            Change {
+                                message: main_change.clone(),
+                                group: group.to_owned(),
+                            },
+                            pr.clone(),
+                        );
                     }
                 }
-            } else if generate_main_change {
-                if let Some(category) = &config.default_category {
-                    dst.changes.push(Change {
-                        message: main_change,
-                        category: category.to_owned(),
-                        prs: pr,
-                    });
+            }
+            if generate_main_change {
+                if let Some(group) = &config.default_group {
+                    dst.insert_pr_change(
+                        Change {
+                            message: main_change,
+                            group: group.to_owned(),
+                        },
+                        pr,
+                    );
                 }
             }
         }
@@ -98,6 +105,21 @@ impl ReleaseState {
         let mut tera = Tera::default();
         tera.add_raw_template("template", &config.template)?;
         tera.register_filter("upper_first", upper_first_filter);
+        let mut ctx = self.clone();
+        ctx.changes.sort_by(|change1, _, change2, _| {
+            let pos1 = config
+                .groups
+                .iter()
+                .position(|it| it == &change1.group)
+                .unwrap_or(config.groups.len());
+            let pos2 = config
+                .groups
+                .iter()
+                .position(|it| it == &change2.group)
+                .unwrap_or(config.groups.len());
+            pos1.cmp(&pos2)
+        });
+
         let mut ctx = tera::Context::from_serialize(self)?;
         ctx.insert("version", &version);
         let res = tera.render("template", &ctx)?;
@@ -165,6 +187,6 @@ impl cli::CliArgs {
 
 fn main() {
     if let Err(err) = cli::CliArgs::parse().run() {
-        eprintln!("error: {err}");
+        eprintln!("error: {err:?}");
     }
 }

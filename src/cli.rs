@@ -19,7 +19,7 @@ pub struct CliArgs {
         short,
         long,
         value_name = "FILE",
-        default_value = "crabby_changelog.json"
+        default_value = ".crabby_changelog/changelog.json"
     )]
     pub state: PathBuf,
 
