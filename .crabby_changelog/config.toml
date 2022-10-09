@@ -1,0 +1,56 @@
+default_group = "Usability improvements and fixes"
+
+main_branch = "main"
+changelog_branch = "changelog"
+repo = "helix-editor/helix"
+
+groups = [
+    "Breaking changes",
+    "Features",
+    "Commands",
+    "Usability improvements and fixes",
+    "Themes",
+    "LSP",
+    "New languages",
+    "Updated languages and queries",
+    "Packaging",
+]
+
+template = """
+{% if version %}\
+    # {{ now() | date(format="%y.%m") }}.{{ version }}
+{% else %}\
+    # Unreleased Changes
+{% endif %}
+A big _thank you_ to our contributors! This release had {{ authors | length }} contributors.
+
+As usual, the following is a summary of each of the changes since the last release.
+For the full log, check out the [git log].
+
+{% for group, changes in changes | group_by(attribute="group") %}\
+{{ group }}:
+{% for change in changes %}
+- {{ change.message | upper_first }} \
+{% if change.pr | length != 0 %}\
+(\
+    {% for pr in change.pr %}\
+    [#{{ pr }}]({{ pr_url(pr=pr) }})\
+    {% if not loop.last %}, {% endif %}\
+    {% endfor %}\
+)\
+{% endif %}\n
+{% endfor %}\
+{% endfor %}\
+"""
+
+[label_groups]
+A-theme = "Themes"
+A-lang_lsp = "LSP"
+A-lang_new = "New languages"
+A-lang_update = "Updated languages and queries"
+A-packaging = "Packaging"
+A-command = "Commands"
+C-bug = "Usability improvements and fixes"
+C-feat = "Features"
+R-breaking-change = "Breaking changes"
+

@@ -1,0 +1,17 @@
+authors = ["pascalkuthe", "archseer"]
+
+[[changes]]
+message = "Fix crash XYZ"
+group = "Usability improvements and fixes"
+pr = [1457]
+
+[[changes]]
+message = "Change keybinding XYX"
+group = "Breaking changes"
+pr = 3300
+
+[[changes]]
+message = "Add Ability to Display diffs and act as a difftool"
+group = "Features"
+pr = [3415, 2789]
+

@@ -1,0 +1,21 @@
+[package]
+name = "crabby_changes"
+authors = ["pascalkuthe <pascal.kuthe@semimod.de>"]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.65"
+chrono = { version = "0.4.22", features = ["serde"] }
+clap = { version = "4.0.11", features = ["derive"] }
+indexmap = { version = "1.9.1", features = ["serde-1"] }
+indoc = "1.0.7"
+serde = { version = "1.0.145", features = ["derive"] }
+serde_json = { version = "1.0.85", features = ["preserve_order"] }
+tera = "1.17.1"
+toml = "0.5.9"
+ureq = "2.5.0"
+xshell = "0.2.2"
